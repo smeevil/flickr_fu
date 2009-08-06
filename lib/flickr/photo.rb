@@ -3,6 +3,7 @@ class Flickr::Photos::Photo
   attr_accessor :id, :owner, :secret, :server, :farm, :title, :is_public, :is_friend, :is_family # standard attributes
   attr_accessor :license_id, :uploaded_at, :taken_at, :owner_name, :icon_server, :original_format, :updated_at, :geo, :tags, :machine_tags, :o_dims, :views, :media # extra attributes
   attr_accessor :info_added, :description, :original_secret, :owner_username, :owner_realname, :url_photopage, :notes # info attributes
+  attr_accessor :exif # exif info
   attr_accessor :comments # comment attributes
   
   # create a new instance of a flickr photo.
@@ -198,6 +199,28 @@ class Flickr::Photos::Photo
     true
   end
   
+  def exif_info(options)
+    raw=options[:raw]||false #default return clean value
+    attach_info # request the extra info
+    tag=options[:tag].titleize.gsub(" ","") #transform into the right syntax , given "date time original" this will become DateTimeOriginal
+    i=0 # set counter to walk through the array since self.exif.size does return anything .....
+    done=false # we are not done
+    until done # until we have run through the whole array (since we do not know how big it is :/)
+      begin
+        if self.exif[i][:tag]==tag #found our requested tag
+          result=self.exif[i].clean unless raw # return the clean value unless specifically asked for raw
+          result=self.exif[i].raw if result.nil? #return the raw value, also fallback if there is no clean value
+          done=true #stop walking the array
+        end
+      rescue # we presummably received at the end of the array so stop and return nil
+        done=true
+        result=nil
+      end
+      i+=1 # continue walking the array since we are not done yet
+    end
+    result.to_s # return the value , but call to_s else it will be empty...
+  end
+  
   def description # :nodoc:
     attach_info
     @description
@@ -308,14 +331,16 @@ class Flickr::Photos::Photo
 
       rsp.photo.notes.note.each do |note|
         self.notes << Flickr::Photos::Note.new(:id => note[:id],
-		  :note => note.to_s,
-		  :author => note[:author],
-		  :author_name => note[:authorname],
-		  :x => note[:x],
-		  :y => note[:y],
-		  :width => note[:w],
-		  :height => note[:h])
+          :note => note.to_s,
+          :author => note[:author],
+          :author_name => note[:authorname],
+          :x => note[:x],
+          :y => note[:y],
+          :width => note[:w],
+          :height => note[:h]
+        )
       end if rsp.photo.notes.note
+      self.exif = @flickr.send_request('flickr.photos.getExif', :photo_id => self.id, :secret => self.secret).photo.exif
     end
   end
 end
