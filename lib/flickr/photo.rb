@@ -203,6 +203,15 @@ class Flickr::Photos::Photo
     raw=options[:raw]||false #default return clean value
     attach_info # request the extra info
     tag=options[:tag].titleize.gsub(" ","") #transform into the right syntax , given "date time original" this will become DateTimeOriginal
+    #exceptions
+    case tag
+      when /^iso$/i : tag="ISO"
+      when /^latitude$/i : tag="GPSLatitude"
+      when /^longitude$/i : tag="GPSLongitude"
+      when /^datetimedigitized$/i : tag="CreateDate"
+        
+    end
+    puts "looking for tag #{tag}"
     i=0 # set counter to walk through the array since self.exif.size does return anything .....
     done=false # we are not done
     until done # until we have run through the whole array (since we do not know how big it is :/)
