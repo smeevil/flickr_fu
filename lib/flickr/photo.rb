@@ -211,7 +211,6 @@ class Flickr::Photos::Photo
       when /^datetimedigitized$/i : tag="CreateDate"
         
     end
-    puts "looking for tag #{tag}"
     i=0 # set counter to walk through the array since self.exif.size does return anything .....
     done=false # we are not done
     until done # until we have run through the whole array (since we do not know how big it is :/)
